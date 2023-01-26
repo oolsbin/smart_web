@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="board">
+
+<!-- 방명록 댓글 삭제 -->
+<delete id='comment_delete'>
+delete from board_comment where id = #{id}
+</delete>
+
+
+<!-- 방명록 댓글 변경저장 -->
+<update id="comment_update">
+update board_comment set content = #{content}
+where id = #{id}
+</update>
+
+<!-- 방명록 댓글 목록 조회 -->
+<select id='comment_list' resultType='board.BoardCommentVO'>
+select c.*, name 
+from board_comment c left outer join member m on c.writer = m.id 
+where board_id = #{board_id}
+order by c.id desc 
+</select>
+
+
+<!-- 방명록 댓글 신규저장 -->
+<insert id='comment_insert'>
+insert into board_comment (content, writer, board_id)
+values ( #{content}, #{writer}, #{board_id} )
+</insert>
+
+
+<!-- 방명록 첨부파일 저장처리 -->
+<insert id='file_insert'>
+<!-- 첨부파일이 여러개이므로 반복문처리 -->
+<foreach collection="fileList" item='file' 
+			open="insert all" separator=" " close="select * from dual">
+into board_file ( filename, filepath, board_id )
+values ( #{file.filename}, #{file.filepath}, #{id} )
+</foreach>
+</insert>
+
+<!-- 방명록 신규 글저장처리 -->
+<insert id='insert'>
+insert into board ( title, content, writer )
+values ( #{title}, #{content}, #{writer} )
+
+<!-- 저장후 board 의 pk인 id의 시퀀스를 반환해준다  -->
+<selectKey keyProperty="id" resultType="integer" order='AFTER'>
+	select seq_board.currval from dual
+</selectKey>
+
+</insert>
+
+<!-- 선택한 방명록 글 삭제 -->
+<delete id="delete">
+delete from board where id = #{id}
+</delete>
+
+<!-- 선택한 방명록 글 변경저장 -->
+<update id="update">
+update board set title = #{title}, content = #{content}
+where id = #{id}
+</update>
+
+<!-- 선택한 방명록 글의 조회수처리 -->
+<update id="read">
+update board set readcnt = readcnt +1 where id = #{id}
+</update>
+
+<!-- 선택한 첨부파일정보 조회 -->
+<select id='file_info' resultType='board.BoardFileVO'>
+select * from board_file where id = #{id}
+</select>
+
+<!-- 삭제대상인 첨부파일정보 삭제 -->
+<delete id="file_delete">
+delete from board_file where id in ( ${removed} )
+</delete>
+
+
+<!-- 삭제대상인 첨부파일정보목록 조회 -->
+<select id='removed_file_list' resultType='board.BoardFileVO'>
+select * from board_file where id in ( ${removed} )
+</select>
+
+
+<!-- 선택한 방명록 글에 첨부된 파일정보 조회 -->
+<select id='file_list' resultType='board.BoardFileVO'>
+select * from board_file where board_id = #{board_id}
+</select>
+
+
+<!-- 선택한 방명록 글 정보 조회 -->
+<select id='info' resultType='board.BoardVO'>
+select b.*, name 
+from board b left outer join member m on b.writer = m.id  
+where b.id = #{id}
+</select>
+
+
+<!-- 방명록 글 목록 10건 조회 -->
+<select id='list' resultType='board.BoardVO'>
+select * 
+from  (select row_number() over(order by b.id) no, name, b.*
+                        , (select count(*) from board_file f where b.id=f.board_id) filecnt 
+       from board b left outer join member m on b.writer = m.id
+       <include refid="search_where"/>) b
+where no between #{beginList} and #{endList}             
+order by no desc
+
+<!-- 
+select row_number() over(order by b.id) no, name, b.*
+		, (select count(*) from board_file f where b.id=f.board_id) filecnt 
+from board b left outer join member m on b.writer = m.id
+order by no desc 
+ -->
+</select>
+
+<sql id='search_where'>
+<choose>
+	<when test="search=='s1'"><!-- 전체 -->
+		where title   like '%' || #{keyword} || '%'
+		or    content like '%' || #{keyword} || '%'
+		or    writer in (select id from member 
+		                 where name like '%' || #{keyword} || '%')
+	</when>
+	<when test="search=='s2'"><!-- 제목 -->
+		where title   like '%' || #{keyword} || '%'
+	</when>
+	<when test="search=='s3'"><!-- 내용 -->
+		where content like '%' || #{keyword} || '%'
+	</when>
+	<when test="search=='s4'"><!-- 작성자 -->
+		where writer in (select id from member 
+		                 where name like '%' || #{keyword} || '%')
+	</when>
+	<when test="search=='s5'"><!-- 제목+내용 -->
+		where title   like '%' || #{keyword} || '%'
+		or    content like '%' || #{keyword} || '%'
+	</when>
+</choose>
+</sql>
+
+<!-- 방명록 글 총 건수 조회 -->
+<select id='total' resultType='integer'>
+select count(id) from board <include refid="search_where"/>
+</select>
+
+
+</mapper>
+
+
+
+
+

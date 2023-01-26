@@ -1,0 +1,36 @@
+웹브라우저에서의 사용자 행위로 인한 url 요청 
+-> Controller
+-> Service
+-> DAO
+-> mapper
+
+
+DB 연결된 CRUD 처리들을 인터페이스에 선언한다
+-> 인터페이스를 구현하는 Service 클래스를 선언한다.
+-> 인터페이스를 구현하는 DAO 클래스를 선언한다
+
+
+선언한 Service 클래스와 DAO 클래스 객체의 생성은 개발자가 하지 않고 스프링이 생성하도록 한다. : IoC(Inversion of Control)
+@Service, @Repository
+
+스프링이 생성된 객체의 주소를 주입시키도록 한다: Dependency Injection(DI)
+@Autowired 
+
+ 
+파일업로드하기 위한 라이브러리 pom.xml
+		<dependency>
+		    <groupId>commons-fileupload</groupId>
+		    <artifactId>commons-fileupload</artifactId>
+		    <version>1.4</version>
+		</dependency>
+		
+		
+파일업로드 클래스에 대한 객체 생성 -servlet-context.xml
+	<beans:bean id='multipartResolver' 
+		class='org.springframework.web.multipart.commons.CommonsMultipartResolver'>
+		<beans:property name="defaultEncoding" value='utf-8'/>
+	</beans:bean>
+		
+						
+						
+						 
